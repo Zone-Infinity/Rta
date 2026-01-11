@@ -1,5 +1,6 @@
 package me.isoham.rta.ui
 
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,9 +10,11 @@ import me.isoham.rta.R
 import me.isoham.rta.model.AppInfo
 
 class AppAdapter(
-    private val apps: List<AppInfo>, 
+    private val allApps: List<AppInfo>,
     private val onClick: (AppInfo) -> Unit
 ) : RecyclerView.Adapter<AppAdapter.ViewHolder>() {
+
+    private var visibleApps: List<AppInfo> = allApps
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val text: TextView = view.findViewById(R.id.app_name)
@@ -24,12 +27,26 @@ class AppAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val app = apps[position]
+        val app = visibleApps[position]
         holder.text.text = app.name
         holder.itemView.setOnClickListener {
             onClick(app)
         }
     }
 
-    override fun getItemCount(): Int = apps.size
+    override fun getItemCount(): Int = visibleApps.size
+
+    fun filter(query: String) {
+        visibleApps =
+            if (query.isBlank()) {
+                allApps
+            } else {
+                allApps.filter {
+                    it.name.contains(query, ignoreCase = true)
+                }
+            }
+
+        // notifyDataSetChanged is intentional: full list filter, no animations
+        notifyDataSetChanged()
+    }
 }
