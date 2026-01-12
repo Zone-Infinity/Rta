@@ -37,13 +37,24 @@ class AppAdapter(
     override fun getItemCount(): Int = visibleApps.size
 
     fun filter(query: String) {
+        val query = query.trim().lowercase()
+
         visibleApps =
             if (query.isBlank()) {
                 allApps
             } else {
-                allApps.filter {
-                    it.name.contains(query, ignoreCase = true)
+                val startsWith = mutableListOf<AppInfo>()
+                val contains = mutableListOf<AppInfo>()
+
+                for (app in allApps) {
+                    val name = app.name.lowercase()
+                    when {
+                        name.startsWith(query) -> startsWith.add(app)
+                        name.contains(query) -> contains.add(app)
+                    }
                 }
+
+                startsWith + contains
             }
 
         // notifyDataSetChanged is intentional: full list filter, no animations
