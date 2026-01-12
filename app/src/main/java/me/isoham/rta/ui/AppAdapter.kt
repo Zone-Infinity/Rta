@@ -60,4 +60,8 @@ class AppAdapter(
         // notifyDataSetChanged is intentional: full list filter, no animations
         notifyDataSetChanged()
     }
+
+    fun getTopApp(): AppInfo? {
+        return visibleApps.firstOrNull()
+    }
 }

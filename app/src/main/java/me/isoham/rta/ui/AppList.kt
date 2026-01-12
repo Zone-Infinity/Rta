@@ -1,17 +1,20 @@
 package me.isoham.rta.ui
 
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Box
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,11 +25,16 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import me.isoham.rta.model.AppInfo
@@ -41,6 +49,10 @@ fun AppList(
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     var searchActive by remember { mutableStateOf(false) }
+
+    val adapter = remember {
+        AppAdapter(apps, onAppClick)
+    }
 
     LaunchedEffect(searchActive) {
         if (searchActive) {
@@ -64,6 +76,14 @@ fun AppList(
             value = query,
             onValueChange = { query = it },
             singleLine = true,
+            keyboardOptions = KeyboardOptions(
+                imeAction = ImeAction.Search
+            ),
+            keyboardActions = KeyboardActions(
+                onSearch = {
+                    adapter.getTopApp()?.let { onAppClick(it) }
+                }
+            ),
             colors = TextFieldDefaults.colors(
                 cursorColor =
                     if (query.isEmpty()) Color.Transparent
@@ -72,18 +92,17 @@ fun AppList(
             modifier = Modifier
                 .fillMaxWidth()
                 .focusRequester(focusRequester)
-                .height(if (searchActive) 56.dp else 1.dp)
+                .height(if (searchActive) 56.dp else 0.dp)
                 .alpha(if (searchActive) 1f else 0f),
             placeholder = { Text("Search apps") },
         )
-
 
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { context ->
                 RecyclerView(context).apply {
                     layoutManager = LinearLayoutManager(context)
-                    adapter = AppAdapter(apps, onAppClick)
+                    this.adapter = adapter
                     setHasFixedSize(true)
 
                     addOnScrollListener(object : RecyclerView.OnScrollListener() {
@@ -93,7 +112,7 @@ fun AppList(
                             val atTop = !rv.canScrollVertically(-1)
 
                             // ENTER search: only when pulling DOWN at top (dy < 0)
-                            if (atTop && dy <= 0 && !searchActive && rv.scrollState == RecyclerView.SCROLL_STATE_DRAGGING) {
+                            if (atTop && dy <= 0 && !searchActive) {
                                 searchActive = true
                                 return
                             }
@@ -106,8 +125,8 @@ fun AppList(
                     })
                 }
             },
-            update = { recyclerView ->
-                (recyclerView.adapter as AppAdapter).filter(query)
+            update = { _ ->
+                adapter.filter(query)
             }
         )
     }
