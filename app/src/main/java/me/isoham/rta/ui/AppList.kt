@@ -140,6 +140,7 @@ fun AppList(
             ),
             keyboardActions = KeyboardActions(
                 onSearch = {
+                    if (query.isBlank()) return@KeyboardActions
                     adapter.getTopApp()?.let {
                         onAppClick(it)
                         searchActive = false
