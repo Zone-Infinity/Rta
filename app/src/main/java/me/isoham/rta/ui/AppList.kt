@@ -77,10 +77,13 @@ fun AppList(
     var searchActive by remember { mutableStateOf(false) }
 
     var selectedApp by remember { mutableStateOf<AppInfo?>(null) }
-
+    val hiddenApps = remember { mutableSetOf<String>() }
+    val favoriteApps = remember { mutableSetOf<String>() }
     val adapter = remember {
         AppAdapter(
             apps,
+            hiddenApps,
+            favoriteApps,
             onAppClick,
             onLongClick = { app ->
                 selectedApp = app
@@ -218,6 +221,28 @@ fun AppList(
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK
                         }
                         context.startActivity(intent)
+                        selectedApp = null
+                    }
+
+                    MenuItem(
+                        text = if (favoriteApps.contains(app.packageName))
+                            "Remove from favorites"
+                        else
+                            "Add to favorites"
+                    ) {
+                        if (favoriteApps.contains(app.packageName)) {
+                            favoriteApps.remove(app.packageName)
+                        } else {
+                            favoriteApps.add(app.packageName)
+                        }
+
+                        adapter.updateApps(apps)
+                        selectedApp = null
+                    }
+
+                    MenuItem("Hide app") {
+                        hiddenApps.add(app.packageName)
+                        adapter.updateApps(apps)
                         selectedApp = null
                     }
 

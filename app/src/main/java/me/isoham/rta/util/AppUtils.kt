@@ -4,6 +4,12 @@ import android.content.Context
 import android.content.Intent
 import me.isoham.rta.model.AppInfo
 
+// NOTE:
+// Some apps (e.g., Amazon Pay, some banking apps) do NOT declare
+// CATEGORY_LAUNCHER activities.
+// They will NOT appear here by design.
+// Niagara / Moto handle this with extra heuristics.
+// Intentionally skipped for v1.
 fun getInstalledApps(context: Context): List<AppInfo> {
     val pm = context.packageManager
     val intent = Intent(Intent.ACTION_MAIN, null).apply {

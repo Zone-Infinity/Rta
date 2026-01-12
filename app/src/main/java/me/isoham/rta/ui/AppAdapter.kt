@@ -10,8 +10,10 @@ import me.isoham.rta.model.AppInfo
 
 class AppAdapter(
     private var allApps: List<AppInfo>,
+    private var hiddenApps: Set<String>,
+    private var favoriteApps: Set<String>,
     private val onClick: (AppInfo) -> Unit,
-    private val onLongClick: (AppInfo) -> Unit
+    private val onLongClick: (AppInfo) -> Unit,
 ) : RecyclerView.Adapter<AppAdapter.ViewHolder>() {
     private var visibleApps: List<AppInfo> = allApps
 
@@ -39,12 +41,23 @@ class AppAdapter(
 
     override fun getItemCount(): Int = visibleApps.size
 
-    fun filter(query: String) {
-        val query = query.trim().lowercase()
+    fun filter(rawQuery: String) {
+        val query = rawQuery.trim().lowercase()
 
         visibleApps =
             if (query.isBlank()) {
-                allApps
+                val favorites = mutableListOf<AppInfo>()
+                val normal = mutableListOf<AppInfo>()
+
+                for (app in allApps) {
+                    if (favoriteApps.contains(app.packageName)) {
+                        favorites.add(app)
+                    } else {
+                        normal.add(app)
+                    }
+                }
+
+                favorites + normal
             } else {
                 val startsWith = mutableListOf<AppInfo>()
                 val contains = mutableListOf<AppInfo>()
@@ -69,8 +82,17 @@ class AppAdapter(
     }
 
     fun updateApps(newApps: List<AppInfo>) {
-        visibleApps = newApps
-        allApps = newApps
-        notifyDataSetChanged()
+        allApps = newApps.filterNot {
+            hiddenApps.contains(it.packageName)
+        }
+        filter("")
+    }
+
+    fun updateVisibilityRules(
+        hidden: Set<String>,
+        favorites: Set<String>
+    ) {
+        hiddenApps = hidden
+        favoriteApps = favorites
     }
 }
