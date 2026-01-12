@@ -73,7 +73,11 @@ fun AppList(
             ),
             keyboardActions = KeyboardActions(
                 onSearch = {
-                    adapter.getTopApp()?.let { onAppClick(it) }
+                    adapter.getTopApp()?.let {
+                        onAppClick(it)
+                        searchActive = false
+                        query = ""
+                    }
                 }
             ),
             colors = TextFieldDefaults.colors(
