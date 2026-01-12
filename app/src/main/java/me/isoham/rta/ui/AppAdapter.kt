@@ -11,10 +11,9 @@ import me.isoham.rta.R
 import me.isoham.rta.model.AppInfo
 
 class AppAdapter(
-    private val allApps: List<AppInfo>,
+    private var allApps: List<AppInfo>,
     private val onClick: (AppInfo) -> Unit
 ) : RecyclerView.Adapter<AppAdapter.ViewHolder>() {
-
     private var visibleApps: List<AppInfo> = allApps
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -71,5 +70,11 @@ class AppAdapter(
 
     fun getTopApp(): AppInfo? {
         return visibleApps.firstOrNull()
+    }
+
+    fun updateApps(newApps: List<AppInfo>) {
+        visibleApps = newApps
+        allApps = newApps
+        notifyDataSetChanged()
     }
 }

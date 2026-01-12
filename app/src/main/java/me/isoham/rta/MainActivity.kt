@@ -42,27 +42,16 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // Context is like Flutter's BuildContext, but simpler
-                    val context = LocalContext.current
-
-                    // State: list of installed apps
-                    // remember = keep value across recompositions
-                    val apps = remember { getInstalledApps(context) }
-
-                    // UI
-                    if (apps.isNotEmpty()) {
-                        CompositionLocalProvider(
-                            LocalOverscrollConfiguration provides null,
-                            LocalLayoutDirection provides LayoutDirection.Ltr,
-                            LocalDensity provides LocalDensity.current
-                        ) {
-                            AppList(
-                                apps = apps,
-                                onAppClick = { app ->
-                                    launchApp(this, app.packageName)
-                                }
-                            )
-                        }
+                    CompositionLocalProvider(
+                        LocalOverscrollConfiguration provides null,
+                        LocalLayoutDirection provides LayoutDirection.Ltr,
+                        LocalDensity provides LocalDensity.current
+                    ) {
+                        AppList(
+                            onAppClick = { app ->
+                                launchApp(this, app.packageName)
+                            }
+                        )
                     }
                 }
             }
