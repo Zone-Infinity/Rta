@@ -1,5 +1,7 @@
 package me.isoham.rta.ui
 
+import android.content.Intent
+import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -30,6 +32,13 @@ class AppAdapter(
         holder.text.text = app.name
         holder.itemView.setOnClickListener {
             onClick(app)
+        }
+        holder.itemView.setOnLongClickListener {
+            val intent = Intent(Intent.ACTION_DELETE).apply {
+                data = Uri.parse("package:${app.packageName}")
+            }
+            it.context.startActivity(intent)
+            true
         }
     }
 
