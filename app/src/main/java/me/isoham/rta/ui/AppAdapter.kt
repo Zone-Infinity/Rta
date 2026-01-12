@@ -33,10 +33,18 @@ class AppAdapter(
             onClick(app)
         }
         holder.itemView.setOnLongClickListener {
-            val intent = Intent(Intent.ACTION_DELETE).apply {
-                data = Uri.parse("package:${app.packageName}")
+            val context = it.context
+
+            if (app.packageName == context.packageName) {
+                return@setOnLongClickListener true
             }
-            it.context.startActivity(intent)
+            val intent = Intent(Intent.ACTION_UNINSTALL_PACKAGE).apply {
+                data = Uri.parse("package:${app.packageName}")
+                addCategory(Intent.CATEGORY_DEFAULT)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+
+            context.startActivity(intent)
             true
         }
     }
