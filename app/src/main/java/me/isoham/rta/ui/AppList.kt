@@ -4,14 +4,22 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.IntentSender
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -39,6 +47,22 @@ import me.isoham.rta.model.AppInfo
 import me.isoham.rta.util.getInstalledApps
 
 @Composable
+fun MenuItem(
+    text: String,
+    onClick: () -> Unit
+) {
+    Text(
+        text = text,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp),
+        style = MaterialTheme.typography.bodyLarge
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 fun AppList(
     onAppClick: (AppInfo) -> Unit
 ) {
@@ -52,8 +76,16 @@ fun AppList(
     val keyboardController = LocalSoftwareKeyboardController.current
     var searchActive by remember { mutableStateOf(false) }
 
+    var selectedApp by remember { mutableStateOf<AppInfo?>(null) }
+
     val adapter = remember {
-        AppAdapter(apps, onAppClick)
+        AppAdapter(
+            apps,
+            onAppClick,
+            onLongClick = { app ->
+                selectedApp = app
+            }
+        )
     }
 
     LaunchedEffect(searchActive) {
@@ -160,5 +192,44 @@ fun AppList(
                 adapter.filter(query)
             }
         )
+
+        selectedApp?.let { app ->
+            ModalBottomSheet(
+                onDismissRequest = { selectedApp = null }
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+
+                    Text(
+                        text = app.name,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    MenuItem("Open") {
+                        onAppClick(app)
+                        selectedApp = null
+                    }
+
+                    MenuItem("Uninstall") {
+                        val intent = Intent(Intent.ACTION_UNINSTALL_PACKAGE).apply {
+                            data = Uri.parse("package:${app.packageName}")
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        context.startActivity(intent)
+                        selectedApp = null
+                    }
+
+                    MenuItem("App info") {
+                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = Uri.parse("package:${app.packageName}")
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        context.startActivity(intent)
+                        selectedApp = null
+                    }
+                }
+            }
+        }
     }
 }

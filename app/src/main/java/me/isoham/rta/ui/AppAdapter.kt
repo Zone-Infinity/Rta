@@ -1,7 +1,5 @@
 package me.isoham.rta.ui
 
-import android.content.Intent
-import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,7 +10,8 @@ import me.isoham.rta.model.AppInfo
 
 class AppAdapter(
     private var allApps: List<AppInfo>,
-    private val onClick: (AppInfo) -> Unit
+    private val onClick: (AppInfo) -> Unit,
+    private val onLongClick: (AppInfo) -> Unit
 ) : RecyclerView.Adapter<AppAdapter.ViewHolder>() {
     private var visibleApps: List<AppInfo> = allApps
 
@@ -33,18 +32,7 @@ class AppAdapter(
             onClick(app)
         }
         holder.itemView.setOnLongClickListener {
-            val context = it.context
-
-            if (app.packageName == context.packageName) {
-                return@setOnLongClickListener true
-            }
-            val intent = Intent(Intent.ACTION_UNINSTALL_PACKAGE).apply {
-                data = Uri.parse("package:${app.packageName}")
-                addCategory(Intent.CATEGORY_DEFAULT)
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
-
-            context.startActivity(intent)
+            onLongClick(app)
             true
         }
     }
