@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import me.isoham.rta.adapter.AppAdapter
 import me.isoham.rta.data.AppInfo
+import me.isoham.rta.data.LauncherPrefs
 
 @Composable
 fun AppList(
@@ -23,7 +24,14 @@ fun AppList(
     val context = LocalContext.current
 
     // --- STATE (single source of truth) ---
-    var state by remember { mutableStateOf(LauncherState()) }
+    var state by remember {
+        mutableStateOf(
+            LauncherState(
+                hiddenApps = LauncherPrefs.loadHiddenApps(context),
+                favoriteApps = LauncherPrefs.loadFavoriteApps(context)
+            )
+        )
+    }
 
     // --- CONTROLLER (stateless, safe) ---
     val controller = remember { LauncherController(context) }
@@ -145,12 +153,18 @@ fun AppList(
                 },
                 onOpen = { onAppClick(app) },
                 onToggleFavorite = {
-                    controller.toggleFavorite(state, app.packageName) { state = it }
+                    controller.toggleFavorite(state, app.packageName) { newState ->
+                        state = newState
+                        LauncherPrefs.saveFavoriteApps(context, state.favoriteApps)
+                    }
                     adapter.updateApps(state.apps)
                     adapter.filter(state.query)
                 },
                 onHide = {
-                    controller.hideApp(state, app.packageName) { state = it }
+                    controller.hideApp(state, app.packageName) { newState ->
+                        state = newState
+                        LauncherPrefs.saveHiddenApps(context, state.hiddenApps)
+                    }
                     adapter.updateApps(state.apps)
                     adapter.filter(state.query)
                 }
