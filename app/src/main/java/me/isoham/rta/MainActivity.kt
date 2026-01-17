@@ -11,16 +11,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
+import me.isoham.rta.system.AppIntents
 import me.isoham.rta.ui.AppList
 import me.isoham.rta.ui.theme.RtaTheme
-import me.isoham.rta.util.getInstalledApps
-import me.isoham.rta.util.launchApp
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalFoundationApi::class)
@@ -49,7 +46,7 @@ class MainActivity : ComponentActivity() {
                     ) {
                         AppList(
                             onAppClick = { app ->
-                                launchApp(this, app.packageName)
+                                AppIntents.launch(this, app.packageName)
                             }
                         )
                     }

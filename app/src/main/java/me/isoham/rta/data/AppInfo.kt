@@ -1,4 +1,4 @@
-package me.isoham.rta.model
+package me.isoham.rta.data
 
 import androidx.compose.runtime.Immutable
 

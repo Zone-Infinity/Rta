@@ -1,4 +1,4 @@
-package me.isoham.rta.ui
+package me.isoham.rta.adapter
 
 import android.view.LayoutInflater
 import android.view.View
@@ -6,15 +6,16 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import me.isoham.rta.R
-import me.isoham.rta.model.AppInfo
+import me.isoham.rta.data.AppInfo
 
 class AppAdapter(
     private var allApps: List<AppInfo>,
-    private var hiddenApps: Set<String>,
-    private var favoriteApps: Set<String>,
+    private val hiddenApps: Set<String>,
+    private val favoriteApps: Set<String>,
     private val onClick: (AppInfo) -> Unit,
     private val onLongClick: (AppInfo) -> Unit,
 ) : RecyclerView.Adapter<AppAdapter.ViewHolder>() {
+
     private var visibleApps: List<AppInfo> = allApps
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -30,9 +31,7 @@ class AppAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val app = visibleApps[position]
         holder.text.text = app.name
-        holder.itemView.setOnClickListener {
-            onClick(app)
-        }
+        holder.itemView.setOnClickListener { onClick(app) }
         holder.itemView.setOnLongClickListener {
             onLongClick(app)
             true
@@ -41,58 +40,43 @@ class AppAdapter(
 
     override fun getItemCount(): Int = visibleApps.size
 
+    /** Call ONLY when app list changes (install / uninstall / hide) */
+    fun updateApps(newApps: List<AppInfo>) {
+        allApps = newApps.filterNot { hiddenApps.contains(it.packageName) }
+        visibleApps = allApps
+        notifyDataSetChanged()
+    }
+
+    /** Call ONLY when query changes */
     fun filter(rawQuery: String) {
         val query = rawQuery.trim().lowercase()
 
         visibleApps =
             if (query.isBlank()) {
-                val favorites = mutableListOf<AppInfo>()
-                val normal = mutableListOf<AppInfo>()
+                val favs = mutableListOf<AppInfo>()
+                val rest = mutableListOf<AppInfo>()
 
                 for (app in allApps) {
-                    if (favoriteApps.contains(app.packageName)) {
-                        favorites.add(app)
-                    } else {
-                        normal.add(app)
-                    }
+                    if (favoriteApps.contains(app.packageName)) favs.add(app)
+                    else rest.add(app)
                 }
-
-                favorites + normal
+                favs + rest
             } else {
-                val startsWith = mutableListOf<AppInfo>()
+                val starts = mutableListOf<AppInfo>()
                 val contains = mutableListOf<AppInfo>()
 
                 for (app in allApps) {
                     val name = app.name.lowercase()
                     when {
-                        name.startsWith(query) -> startsWith.add(app)
+                        name.startsWith(query) -> starts.add(app)
                         name.contains(query) -> contains.add(app)
                     }
                 }
-
-                startsWith + contains
+                starts + contains
             }
 
-        // notifyDataSetChanged is intentional: full list filter, no animations
         notifyDataSetChanged()
     }
 
-    fun getTopApp(): AppInfo? {
-        return visibleApps.firstOrNull()
-    }
-
-    fun updateApps(newApps: List<AppInfo>) {
-        allApps = newApps.filterNot {
-            hiddenApps.contains(it.packageName)
-        }
-        filter("")
-    }
-
-    fun updateVisibilityRules(
-        hidden: Set<String>,
-        favorites: Set<String>
-    ) {
-        hiddenApps = hidden
-        favoriteApps = favorites
-    }
+    fun getTopApp(): AppInfo? = visibleApps.firstOrNull()
 }
