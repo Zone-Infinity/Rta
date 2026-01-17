@@ -16,9 +16,22 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import me.isoham.rta.system.AppIntents
-import me.isoham.rta.ui.AppList
+import me.isoham.rta.ui.LauncherScreen
 import me.isoham.rta.ui.theme.RtaTheme
 
+/*
+RTA v1 scope lock:
+- No biometrics
+- No calculator gate
+- No settings screen
+- No animations
+- No feeds
+- No cloud
+- No analytics
+
+This version is intentionally minimal and stable.
+Future changes must justify breaking this simplicity.
+*/
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalFoundationApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,7 +57,7 @@ class MainActivity : ComponentActivity() {
                         LocalLayoutDirection provides LayoutDirection.Ltr,
                         LocalDensity provides LocalDensity.current
                     ) {
-                        AppList(
+                        LauncherScreen(
                             onAppClick = { app ->
                                 AppIntents.launch(this, app.packageName)
                             }

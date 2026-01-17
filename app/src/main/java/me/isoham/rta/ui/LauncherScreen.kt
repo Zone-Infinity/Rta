@@ -4,10 +4,19 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalContext
@@ -17,8 +26,9 @@ import me.isoham.rta.adapter.AppAdapter
 import me.isoham.rta.data.AppInfo
 import me.isoham.rta.data.LauncherPrefs
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun AppList(
+fun LauncherScreen(
     onAppClick: (AppInfo) -> Unit
 ) {
     val context = LocalContext.current
@@ -32,6 +42,8 @@ fun AppList(
             )
         )
     }
+    var showHiddenManager by remember { mutableStateOf(false) }
+    var pinError by remember { mutableStateOf<String?>(null) }
 
     // --- CONTROLLER (stateless, safe) ---
     val controller = remember { LauncherController(context) }
@@ -42,7 +54,10 @@ fun AppList(
     val keyboardController = LocalSoftwareKeyboardController.current
 
     // --- RecyclerView adapter ---
-    val adapter = remember {
+    val adapter = remember(
+        state.hiddenApps,
+        state.favoriteApps
+    ) {
         AppAdapter(
             state.apps,
             state.hiddenApps,
@@ -113,9 +128,19 @@ fun AppList(
             query = state.query,
             active = state.searchActive,
             focusRequester = focusRequester,
-            onQueryChange = { it ->
-                controller.onSearchChange(state, it) { state = it }
-                adapter.filter(it)
+            onQueryChange = { input ->
+                // Secret trigger
+                if (input == "#..") {
+                    showHiddenManager = true
+
+                    // Reset search UI
+                    controller.closeSearch(state) { state = it }
+                    adapter.filter("")
+                    return@SearchBar
+                }
+
+                controller.onSearchChange(state, input) { state = it }
+                adapter.filter(input)
             },
             onSearch = {
                 adapter.getTopApp()?.let { it ->
@@ -125,21 +150,22 @@ fun AppList(
                 }
             }
         )
+        key(state.hiddenApps, state.favoriteApps) {
+            AppListView(
+                modifier = Modifier.fillMaxSize(),
+                adapter = adapter
+            ) { dy, atTop ->
 
-        AppListView(
-            modifier = Modifier.fillMaxSize(),
-            adapter = adapter
-        ) { dy, atTop ->
+                // ENTER search
+                if (atTop && dy < 0 && !state.searchActive) {
+                    controller.openSearch(state) { state = it }
+                }
 
-            // ENTER search
-            if (atTop && dy < 0 && !state.searchActive) {
-                controller.openSearch(state) { state = it }
-            }
-
-            // EXIT search
-            if (state.searchActive && dy > 8 && state.query.isEmpty()) {
-                controller.closeSearch(state) { state = it }
-                adapter.filter("")
+                // EXIT search
+                if (state.searchActive && dy > 8 && state.query.isEmpty()) {
+                    controller.closeSearch(state) { state = it }
+                    adapter.filter("")
+                }
             }
         }
 
@@ -164,11 +190,35 @@ fun AppList(
                     controller.hideApp(state, app.packageName) { newState ->
                         state = newState
                         LauncherPrefs.saveHiddenApps(context, state.hiddenApps)
+
+                        if (LauncherPrefs.shouldShowHideHint(context)) {
+                            Toast.makeText(
+                                context,
+                                "App hidden. Type '#..' in search to manage hidden apps.",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            LauncherPrefs.markHideHintShown(context)
+                        }
                     }
                     adapter.updateApps(state.apps)
                     adapter.filter(state.query)
                 }
             )
         }
+    }
+
+    if (showHiddenManager) {
+        ProtectedHiddenApps(
+            context = context,
+            onClose = {
+                showHiddenManager = false
+
+                state = state.copy(
+                    hiddenApps = LauncherPrefs.loadHiddenApps(context)
+                )
+                adapter.updateApps(state.apps)
+                adapter.filter(state.query)
+            }
+        )
     }
 }
